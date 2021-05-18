@@ -16,7 +16,13 @@ async fn main() {
     let auth = oauth2::InstalledFlowAuthenticator::builder(
         secret,
         oauth2::InstalledFlowReturnMethod::HTTPRedirect,
-    ).build().await.unwrap();
+    )
+        .persist_tokens_to_disk(
+            home::home_dir()
+                .unwrap()
+                .join(".google-service-cli/google-calendar-rsvp")
+        )
+        .build().await.unwrap();
 
     let hub = CalendarHub::new(
         hyper::Client::builder()
