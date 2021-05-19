@@ -31,7 +31,7 @@ async fn main() {
     );
 
     let result = hub.events()
-        .get("primary", "1uj192r9qtotb6se0rov83ahr6")
+        .get("primary", "1g4j1h67ndq7kddrb2bptp2cua")
         .doit()
         .await;
 
@@ -50,7 +50,41 @@ async fn main() {
             |Error::FieldClash(_)
             |Error::JsonDecodeError(_, _) => println!("{}", e),
         },
-        Ok(res) => println!("Success: {:?}", res),
+        Ok(res) => {
+            println!("Success: {:?}", res);
+
+            dbg!(&res.1.attendees);
+
+            let event = res.1;
+
+            if let Some(ref original_attendees) = event.attendees {
+                let mut attendees = original_attendees.clone();
+
+                for mut attendee in &mut attendees {
+                    if let Some(is_me) = attendee.self_ {
+                        if is_me {
+                            attendee.response_status = Some("accepted".to_owned());
+
+                            break;
+                        }
+                    }
+                }
+
+                let patched_attendees = serde_json::to_string(&attendees)
+                    .unwrap();
+
+                dbg!(&patched_attendees);
+
+                let res = hub.events()
+                    .patch(event, "primary", "1g4j1h67ndq7kddrb2bptp2cua")
+                    .param("attendees", &patched_attendees)
+                    .doit()
+                    .await
+                    .unwrap();
+
+                dbg!(res);
+            }
+        },
     }
 }
 
