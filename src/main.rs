@@ -1,3 +1,4 @@
+use google_calendar3::api::{Event, EventAttendee};
 use google_calendar3::{CalendarHub, Result, Error};
 use home;
 use hyper;
@@ -55,35 +56,33 @@ async fn main() {
 
             dbg!(&res.1.attendees);
 
-            let event = res.1;
+            let mut event = Event::default();
+            let mut attendee = EventAttendee::default();
 
-            if let Some(ref original_attendees) = event.attendees {
-                let mut attendees = original_attendees.clone();
-
-                for mut attendee in &mut attendees {
-                    if let Some(is_me) = attendee.self_ {
+            if let Some(attendees) = res.1.attendees {
+                for a in &attendees {
+                    if let Some(is_me) = a.self_ {
                         if is_me {
-                            attendee.response_status = Some("accepted".to_owned());
+                            attendee.email = a.email.clone();
 
                             break;
                         }
                     }
                 }
-
-                let patched_attendees = serde_json::to_string(&attendees)
-                    .unwrap();
-
-                dbg!(&patched_attendees);
-
-                let res = hub.events()
-                    .patch(event, "primary", "1g4j1h67ndq7kddrb2bptp2cua")
-                    .param("attendees", &patched_attendees)
-                    .doit()
-                    .await
-                    .unwrap();
-
-                dbg!(res);
             }
+
+            // attendee.email = Some();
+            attendee.response_status = Some("accepted".to_owned());
+
+            event.attendees = Some(vec![attendee]);
+
+            let res = hub.events()
+                .patch(event, "primary", "1g4j1h67ndq7kddrb2bptp2cua")
+                .doit()
+                .await
+                .unwrap();
+
+            dbg!(res);
         },
     }
 }
