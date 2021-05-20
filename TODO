@@ -4,4 +4,4 @@ TODO
 2021.05.18:
 v Figure out how to persist OAuth2 token etc.
 - Remove hard-coded event ID
-- Patch event attendee response status
+v Patch event attendee response status (2021.05.19)
