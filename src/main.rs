@@ -29,13 +29,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for arg in &args[1..] {
         match arg.as_ref() {
-            "-y" | "--yes" => action = Some(EventResponseStatus::Accepted),
-            "-n" | "--no" => action = Some(EventResponseStatus::Declined),
-            "-m" | "--maybe" => action = Some(EventResponseStatus::Tentative),
+            "-y" | "--yes" =>
+                action = Some(EventResponseStatus::Accepted),
+            "-n" | "--no" =>
+                action = Some(EventResponseStatus::Declined),
+            "-m" | "--maybe" =>
+                action = Some(EventResponseStatus::Tentative),
 
-            "--email" => email = true,
+            "--email" =>
+                email = true,
 
-            id => event_ids.push(id),
+            id =>
+                event_ids.push(id),
         }
     }
 
