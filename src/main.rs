@@ -31,12 +31,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         process::exit(exitcode::USAGE);
     }
 
-    rsvp().await;
+    for event_id in &opt_matches.free {
+        rsvp(event_id).await;
+    }
 
     Ok(())
 }
 
-async fn rsvp() {
+async fn rsvp(event_id: &str) {
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -57,7 +59,7 @@ async fn rsvp() {
     );
 
     let result = hub.events()
-        .get("primary", "1g4j1h67ndq7kddrb2bptp2cua")
+        .get("primary", event_id)
         .doit()
         .await
         .unwrap();
@@ -82,7 +84,7 @@ async fn rsvp() {
     event.attendees = Some(vec![attendee]);
 
     let res = hub.events()
-        .patch(event, "primary", "1g4j1h67ndq7kddrb2bptp2cua")
+        .patch(event, "primary", event_id)
         .doit()
         .await
         .unwrap();
