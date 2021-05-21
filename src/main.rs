@@ -1,8 +1,10 @@
+use base64;
 use google_calendar3::api::{Event, EventAttendee};
 use google_calendar3::CalendarHub;
 use home;
 use hyper;
 use hyper_rustls;
+use regex::Regex;
 use tokio;
 use yup_oauth2 as oauth2;
 
@@ -10,6 +12,7 @@ use std::env;
 use std::fmt;
 use std::fs;
 use std::process;
+use std::str;
 
 
 #[derive(Debug)]
@@ -71,7 +74,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     for event_id in &event_ids {
-        rsvp(event_id, &action).await;
+        rsvp(
+            &event_id_from_base64(event_id),
+            &action,
+        ).await;
     }
 
     Ok(())
@@ -143,5 +149,51 @@ fn secret_from_file() -> oauth2::ApplicationSecret {
     match console_secret.installed {
         Some(secret) => secret,
         None => todo!(),
+    }
+}
+
+fn event_id_from_base64(event_id: &str) -> String {
+    // Base64-matching regex from Xuanyuanzhiyuan
+    // (https://stackoverflow.com/users/1076906/xuanyuanzhiyuan) on Stack
+    // Overflow:
+    // https://stackoverflow.com/questions/8571501/how-to-check-whether-a-string-is-base64-encoded-or-not/8571649#8571649
+    let re = Regex::new(
+        "^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$",
+    ).unwrap();
+
+    if !re.is_match(event_id) {
+        return event_id.to_owned();
+    }
+
+    let decoded = &base64::decode(event_id).unwrap();
+    let id_email_pair = str::from_utf8(decoded).unwrap();
+    let values = id_email_pair.split(" ").collect::<Vec<_>>();
+    let id = values.first().unwrap().to_string();
+
+    id
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn test_event_id_from_base64_event_id() {
+        let expected = "1g4j1h67ndq7kddrb2bptp2cua_20210521T120000Z";
+
+        let id = event_id_from_base64(expected);
+
+        assert_eq!(expected, id);
+    }
+
+    #[test]
+    fn test_event_id_from_base64_eid() {
+        let expected = "1g4j1h67ndq7kddrb2bptp2cua";
+        let encoded = base64::encode(format!("{} rory.mercury@example.com", expected));
+
+        let id = event_id_from_base64(&encoded);
+
+        assert_eq!(expected, id);
     }
 }
