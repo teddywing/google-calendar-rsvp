@@ -11,6 +11,10 @@ use std::fs;
 
 #[tokio::main]
 async fn main() {
+    rsvp().await;
+}
+
+async fn rsvp() {
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
