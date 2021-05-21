@@ -7,6 +7,7 @@ use tokio;
 use yup_oauth2 as oauth2;
 
 use std::env;
+use std::fmt;
 use std::fs;
 use std::process;
 
@@ -18,23 +19,33 @@ enum EventResponseStatus {
     Tentative,
 }
 
+impl fmt::Display for EventResponseStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EventResponseStatus::Accepted => write!(f, "accepted"),
+            EventResponseStatus::Declined => write!(f, "declined"),
+            EventResponseStatus::Tentative => write!(f, "tentative"),
+        }
+    }
+}
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let mut action: Option<EventResponseStatus> = None;
+    let mut action_opt: Option<EventResponseStatus> = None;
     let mut email = false;
     let mut event_ids = Vec::new();
 
     for arg in &args[1..] {
         match arg.as_ref() {
             "-y" | "--yes" =>
-                action = Some(EventResponseStatus::Accepted),
+                action_opt = Some(EventResponseStatus::Accepted),
             "-n" | "--no" =>
-                action = Some(EventResponseStatus::Declined),
+                action_opt = Some(EventResponseStatus::Declined),
             "-m" | "--maybe" =>
-                action = Some(EventResponseStatus::Tentative),
+                action_opt = Some(EventResponseStatus::Tentative),
 
             "--email" =>
                 email = true,
@@ -44,6 +55,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    let action = match action_opt {
+        Some(a) => a,
+        None => {
+            eprintln!("error: missing required action argument: --yes | --no | --maybe");
+
+            process::exit(exitcode::USAGE);
+        },
+    };
+
     if event_ids.is_empty() {
         eprintln!("error: missing event ID argument");
 
@@ -51,13 +71,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     for event_id in &event_ids {
-        rsvp(event_id).await;
+        rsvp(event_id, &action).await;
     }
 
     Ok(())
 }
 
-async fn rsvp(event_id: &str) {
+async fn rsvp(event_id: &str, response: &EventResponseStatus) {
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -98,7 +118,7 @@ async fn rsvp(event_id: &str) {
         }
     }
 
-    attendee.response_status = Some("accepted".to_owned());
+    attendee.response_status = Some(response.to_string());
 
     event.attendees = Some(vec![attendee]);
 
