@@ -1,17 +1,39 @@
+use getopts::Options;
 use google_calendar3::api::{Event, EventAttendee};
-use google_calendar3::{CalendarHub, Result, Error};
+use google_calendar3::CalendarHub;
 use home;
 use hyper;
 use hyper_rustls;
 use tokio;
 use yup_oauth2 as oauth2;
 
+use std::env;
 use std::fs;
+use std::process;
 
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.optflag("y", "yes", "accept invitation");
+    opts.optflag("n", "no", "decline invitation");
+    opts.optflag("m", "maybe", "tentatively accept invitation");
+
+    opts.optflag("", "email", "read an email from standard input");
+
+    let opt_matches = opts.parse(&args[1..])?;
+
+    if opt_matches.free.is_empty() {
+        eprintln!("error: missing event ID argument");
+
+        process::exit(exitcode::USAGE);
+    }
+
     rsvp().await;
+
+    Ok(())
 }
 
 async fn rsvp() {

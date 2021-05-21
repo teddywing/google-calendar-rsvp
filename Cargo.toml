@@ -4,6 +4,8 @@ version = "0.0.1"
 edition = "2018"
 
 [dependencies]
+exitcode = "1.1.2"
+getopts = "0.2.21"
 google-calendar3 = "2.0.4+20210327"
 home = "0.5.3"
 hyper = "0.14.7"
