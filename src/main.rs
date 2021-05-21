@@ -1,4 +1,3 @@
-use getopts::Options;
 use google_calendar3::api::{Event, EventAttendee};
 use google_calendar3::CalendarHub;
 use home;
@@ -12,26 +11,41 @@ use std::fs;
 use std::process;
 
 
+#[derive(Debug)]
+enum EventResponseStatus {
+    Accepted,
+    Declined,
+    Tentative,
+}
+
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let mut opts = Options::new();
-    opts.optflag("y", "yes", "accept invitation");
-    opts.optflag("n", "no", "decline invitation");
-    opts.optflag("m", "maybe", "tentatively accept invitation");
+    let mut action: Option<EventResponseStatus> = None;
+    let mut email = false;
+    let mut event_ids = Vec::new();
 
-    opts.optflag("", "email", "read an email from standard input");
+    for arg in &args[1..] {
+        match arg.as_ref() {
+            "-y" | "--yes" => action = Some(EventResponseStatus::Accepted),
+            "-n" | "--no" => action = Some(EventResponseStatus::Declined),
+            "-m" | "--maybe" => action = Some(EventResponseStatus::Tentative),
 
-    let opt_matches = opts.parse(&args[1..])?;
+            "--email" => email = true,
 
-    if opt_matches.free.is_empty() {
+            id => event_ids.push(id),
+        }
+    }
+
+    if event_ids.is_empty() {
         eprintln!("error: missing event ID argument");
 
         process::exit(exitcode::USAGE);
     }
 
-    for event_id in &opt_matches.free {
+    for event_id in &event_ids {
         rsvp(event_id).await;
     }
 
