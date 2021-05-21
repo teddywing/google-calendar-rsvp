@@ -11,7 +11,6 @@ use std::fs;
 
 #[tokio::main]
 async fn main() {
-    // let secret: oauth2::ApplicationSecret = Default::default();
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -34,57 +33,35 @@ async fn main() {
     let result = hub.events()
         .get("primary", "1g4j1h67ndq7kddrb2bptp2cua")
         .doit()
-        .await;
+        .await
+        .unwrap();
 
-    match result {
-        Err(e) => match e {
-            // The Error enum provides details about what exactly happened.
-            // You can also just use its `Debug`, `Display` or `Error` traits
-             Error::HttpError(_)
-            |Error::Io(_)
-            |Error::MissingAPIKey
-            |Error::MissingToken(_)
-            |Error::Cancelled
-            |Error::UploadSizeLimitExceeded(_, _)
-            |Error::Failure(_)
-            |Error::BadRequest(_)
-            |Error::FieldClash(_)
-            |Error::JsonDecodeError(_, _) => println!("{}", e),
-        },
-        Ok(res) => {
-            println!("Success: {:?}", res);
+    let mut event = Event::default();
+    let mut attendee = EventAttendee::default();
 
-            dbg!(&res.1.attendees);
+    if let Some(attendees) = result.1.attendees {
+        for a in &attendees {
+            if let Some(is_me) = a.self_ {
+                if is_me {
+                    attendee.email = a.email.clone();
 
-            let mut event = Event::default();
-            let mut attendee = EventAttendee::default();
-
-            if let Some(attendees) = res.1.attendees {
-                for a in &attendees {
-                    if let Some(is_me) = a.self_ {
-                        if is_me {
-                            attendee.email = a.email.clone();
-
-                            break;
-                        }
-                    }
+                    break;
                 }
             }
-
-            // attendee.email = Some();
-            attendee.response_status = Some("accepted".to_owned());
-
-            event.attendees = Some(vec![attendee]);
-
-            let res = hub.events()
-                .patch(event, "primary", "1g4j1h67ndq7kddrb2bptp2cua")
-                .doit()
-                .await
-                .unwrap();
-
-            dbg!(res);
-        },
+        }
     }
+
+    attendee.response_status = Some("accepted".to_owned());
+
+    event.attendees = Some(vec![attendee]);
+
+    let res = hub.events()
+        .patch(event, "primary", "1g4j1h67ndq7kddrb2bptp2cua")
+        .doit()
+        .await
+        .unwrap();
+
+    dbg!(res);
 }
 
 fn secret_from_file() -> oauth2::ApplicationSecret {
