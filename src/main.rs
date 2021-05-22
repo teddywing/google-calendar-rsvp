@@ -110,7 +110,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let event = rsvp(
             &event_id_from_base64(event_id)?,
             &action,
-        ).await;
+        ).await?;
 
         if is_verbose {
             print_event(&event)?;
@@ -120,8 +120,8 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
-    let secret = secret_from_file().unwrap();
+async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<Event> {
+    let secret = secret_from_file()?;
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
         secret,
@@ -129,10 +129,11 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
     )
         .persist_tokens_to_disk(
             home::home_dir()
-                .unwrap()
+                .ok_or(anyhow::anyhow!("error getting home directory"))?
                 .join(".google-service-cli/google-calendar-rsvp")
         )
-        .build().await.unwrap();
+        .build()
+        .await?;
 
     let hub = CalendarHub::new(
         hyper::Client::builder()
@@ -143,8 +144,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
     let result = hub.events()
         .get("primary", event_id)
         .doit()
-        .await
-        .unwrap();
+        .await?;
 
     let mut event = Event::default();
     let mut attendee = EventAttendee::default();
@@ -168,10 +168,9 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
     let res = hub.events()
         .patch(event, "primary", event_id)
         .doit()
-        .await
-        .unwrap();
+        .await?;
 
-    res.1
+    Ok(res.1)
 }
 
 fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
