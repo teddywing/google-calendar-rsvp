@@ -10,4 +10,9 @@ v Patch event attendee response status (2021.05.19)
 x If ID is an eid, get email from eid instead of making an Event.get request (eid contains organiser's email address, not invitee's)
 - Help and version arguments
 - Application-specific directory for Google secret
-- Read eid from email on standard input
+v Read eid from email on standard input (2021.05.22)
+
+2021.05.22:
+- Verbose flag to display attendees and response statuses
+- Remove `unwrap`s, implement `todo!`s
+- Man page
