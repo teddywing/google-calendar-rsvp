@@ -43,7 +43,7 @@ async fn main() {
     match run().await {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("error: {}", e);
+            eprintln!("error: {}: {}", e, e.root_cause());
 
             process::exit(exitcode::SOFTWARE);
         },
