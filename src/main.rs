@@ -1,3 +1,4 @@
+use anyhow;
 use base64;
 use chrono::DateTime;
 use google_calendar3::api::{Event, EventAttendee};
@@ -37,7 +38,18 @@ impl fmt::Display for EventResponseStatus {
 
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
+    match run().await {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("error: {}", e);
+
+            process::exit(exitcode::SOFTWARE);
+        },
+    }
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let mut action_opt: Option<EventResponseStatus> = None;
@@ -101,7 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ).await;
 
         if is_verbose {
-            print_event(&event);
+            print_event(&event)?;
         }
     }
 
@@ -211,7 +223,7 @@ fn eid_from_email(email: &[u8]) -> String {
     todo!();
 }
 
-fn print_event(event: &Event) {
+fn print_event(event: &Event) -> anyhow::Result<()> {
     if let Some(summary) = &event.summary {
         println!("{}", summary);
         println!();
@@ -223,12 +235,12 @@ fn print_event(event: &Event) {
 
     if let Some(start) = &event.start {
         if let Some(date_time) = &start.date_time {
-            let start_time = DateTime::parse_from_rfc3339(&date_time).unwrap();
+            let start_time = DateTime::parse_from_rfc3339(&date_time)?;
             print!("When         {}", start_time.format("%a %b %e, %Y %H:%M"));
 
             if let Some(end) = &event.end {
                 if let Some(date_time) = &end.date_time {
-                    let end_time = DateTime::parse_from_rfc3339(&date_time).unwrap();
+                    let end_time = DateTime::parse_from_rfc3339(&date_time)?;
                     print!(" – {}", end_time.format("%H:%M"));
                 }
             }
@@ -278,6 +290,8 @@ fn print_event(event: &Event) {
             }
         }
     }
+
+    Ok(())
 }
 
 
