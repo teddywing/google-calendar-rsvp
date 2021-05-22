@@ -41,7 +41,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut action_opt: Option<EventResponseStatus> = None;
     let mut should_read_email = false;
+
+    #[allow(unused_assignments)]
     let mut email_eid = String::new();
+
     let mut event_ids = Vec::new();
 
     for arg in &args[1..] {
