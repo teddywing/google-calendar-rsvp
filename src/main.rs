@@ -19,6 +19,7 @@ use std::process;
 use std::str;
 
 
+/// Event RSVP response status.
 #[derive(Debug)]
 enum EventResponseStatus {
     Accepted,
@@ -27,6 +28,8 @@ enum EventResponseStatus {
 }
 
 impl fmt::Display for EventResponseStatus {
+    /// Translate response status to the equivalent string required by the
+    /// Google Calendar API.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EventResponseStatus::Accepted => write!(f, "accepted"),
@@ -154,6 +157,7 @@ async fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// RSVP to `event_id` with the status `response`.
 async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<Event> {
     let secret = secret_from_file()?;
 
@@ -216,6 +220,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
     Ok(rsvp_response.1)
 }
 
+/// Get the OAuth application secret from the JSON secret file.
 fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
     let xdg_dirs = xdg::BaseDirectories::with_prefix("google-calendar-rsvp")
         .context("can't get XDG base directory")?;
@@ -239,6 +244,7 @@ fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
         .ok_or(anyhow::anyhow!("OAuth2 application secret not found"))
 }
 
+/// Extract an event ID from a base64-encoded eid.
 fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
     let decoded = match base64::decode(event_id) {
         Ok(d) => d,
@@ -256,6 +262,7 @@ fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
     Ok(id)
 }
 
+/// Extract an eid from a Google Calendar invitation email.
 fn eid_from_email(email: &[u8]) -> anyhow::Result<String> {
     let email = mailparse::parse_mail(&email)
         .context("unable to parse email")?;
@@ -283,6 +290,7 @@ fn eid_from_email(email: &[u8]) -> anyhow::Result<String> {
     Err(anyhow::anyhow!("unable to extract event ID from email"))
 }
 
+/// Print a formatted event to standard output.
 fn print_event(event: &Event) -> anyhow::Result<()> {
     if let Some(summary) = &event.summary {
         println!("{}", summary);
