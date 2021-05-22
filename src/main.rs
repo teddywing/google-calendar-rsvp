@@ -141,7 +141,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
         auth,
     );
 
-    let result = hub.events()
+    let get_response = hub.events()
         .get("primary", event_id)
         .doit()
         .await?;
@@ -149,7 +149,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
     let mut event = Event::default();
     let mut attendee = EventAttendee::default();
 
-    if let Some(attendees) = result.1.attendees {
+    if let Some(attendees) = get_response.1.attendees {
         for a in &attendees {
             if let Some(is_me) = a.self_ {
                 if is_me {
@@ -165,12 +165,12 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
 
     event.attendees = Some(vec![attendee]);
 
-    let res = hub.events()
+    let rsvp_response = hub.events()
         .patch(event, "primary", event_id)
         .doit()
         .await?;
 
-    Ok(res.1)
+    Ok(rsvp_response.1)
 }
 
 fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
