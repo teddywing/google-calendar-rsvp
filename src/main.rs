@@ -95,7 +95,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut email_input: Vec<u8> = Vec::new();
         stdin.read_to_end(&mut email_input)?;
 
-        email_eid = eid_from_email(&email_input);
+        email_eid = eid_from_email(&email_input)?;
 
         event_ids.push(&email_eid);
     }
@@ -205,26 +205,28 @@ fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
     Ok(id)
 }
 
-fn eid_from_email(email: &[u8]) -> String {
-    let email = mailparse::parse_mail(&email).unwrap();
-    let re = Regex::new("eid=([^&]+)&").unwrap();
+fn eid_from_email(email: &[u8]) -> anyhow::Result<String> {
+    let email = mailparse::parse_mail(&email)?;
+    let re = Regex::new("eid=([^&]+)&")?;
 
     // Assume email is multipart/alternative.
     for part in &email.subparts {
         if part.ctype.mimetype == "multipart/alternative" {
             for part in &part.subparts {
                 if part.ctype.mimetype == "text/plain" {
-                    let body = part.get_body().unwrap();
-                    let captures = re.captures(&body).unwrap();
-                    let eid = captures.get(1).unwrap();
+                    let body = part.get_body()?;
+                    let captures = re.captures(&body)
+                        .ok_or(anyhow::anyhow!("no matches for event ID"))?;
+                    let eid = captures.get(1)
+                        .ok_or(anyhow::anyhow!("event ID not found"))?;
 
-                    return eid.as_str().to_owned();
+                    return Ok(eid.as_str().to_owned());
                 }
             }
         }
     }
 
-    todo!();
+    Err(anyhow::anyhow!("unable to extract event ID from email"))
 }
 
 fn print_event(event: &Event) -> anyhow::Result<()> {
