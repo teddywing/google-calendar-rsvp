@@ -1,7 +1,7 @@
 use anyhow::{self, Context};
 use base64;
 use chrono::DateTime;
-use google_calendar3::api::{Event, EventAttendee};
+use google_calendar3::api::{Event, EventAttendee, Scope};
 use google_calendar3::CalendarHub;
 use hyper;
 use hyper_rustls;
@@ -171,6 +171,10 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
 
     let get_response = hub.events()
         .get("primary", event_id)
+
+        // Request read-write access to events so that we don't ask for
+        // authorization a second time on the subsequent Event.patch call.
+        .add_scope(Scope::Event)
         .doit()
         .await
         .with_context(|| format!("unable to get event '{}'", event_id))?;
@@ -196,6 +200,9 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
 
     let rsvp_response = hub.events()
         .patch(event, "primary", event_id)
+
+        // The default scope is Scope::Full.
+        .add_scope(Scope::Event)
         .doit()
         .await
         .with_context(|| format!("unable to update event '{}'", event_id))?;
