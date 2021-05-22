@@ -4,12 +4,15 @@ use google_calendar3::CalendarHub;
 use home;
 use hyper;
 use hyper_rustls;
+use mailparse;
+use regex::Regex;
 use tokio;
 use yup_oauth2 as oauth2;
 
 use std::env;
 use std::fmt;
 use std::fs;
+use std::io::{self, Read};
 use std::process;
 use std::str;
 
@@ -38,6 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut action_opt: Option<EventResponseStatus> = None;
     let mut email = false;
+    let mut email_eid = String::new();
     let mut event_ids = Vec::new();
 
     for arg in &args[1..] {
@@ -65,6 +69,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             process::exit(exitcode::USAGE);
         },
     };
+
+    if email {
+        let mut stdin = io::stdin();
+        let mut email_input: Vec<u8> = Vec::new();
+        stdin.read_to_end(&mut email_input)?;
+
+        email_eid = eid_from_email(&email_input);
+
+        event_ids.push(&email_eid);
+    }
 
     if event_ids.is_empty() {
         eprintln!("error: missing event ID argument");
@@ -161,6 +175,28 @@ fn event_id_from_base64(event_id: &str) -> String {
     let id = values.first().unwrap().to_string();
 
     id
+}
+
+fn eid_from_email(email: &[u8]) -> String {
+    let email = mailparse::parse_mail(&email).unwrap();
+    let re = Regex::new("eid=([^&]+)&").unwrap();
+
+    // Assume email is multipart/alternative.
+    for part in &email.subparts {
+        if part.ctype.mimetype == "multipart/alternative" {
+            for part in &part.subparts {
+                if part.ctype.mimetype == "text/plain" {
+                    let body = part.get_body().unwrap();
+                    let captures = re.captures(&body).unwrap();
+                    let eid = captures.get(1).unwrap();
+
+                    return eid.as_str().to_owned();
+                }
+            }
+        }
+    }
+
+    todo!();
 }
 
 
