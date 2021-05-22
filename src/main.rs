@@ -121,7 +121,8 @@ async fn run() -> anyhow::Result<()> {
     if should_read_email {
         let mut stdin = io::stdin();
         let mut email_input: Vec<u8> = Vec::new();
-        stdin.read_to_end(&mut email_input)?;
+        stdin.read_to_end(&mut email_input)
+            .context("unable to read standard input")?;
 
         email_eid = eid_from_email(&email_input)?;
 
@@ -151,13 +152,17 @@ async fn run() -> anyhow::Result<()> {
 async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<Event> {
     let secret = secret_from_file()?;
 
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("google-calendar-rsvp")
+        .context("can't get XDG base directory")?;
+
     let auth = oauth2::InstalledFlowAuthenticator::builder(
         secret,
         oauth2::InstalledFlowReturnMethod::HTTPRedirect,
     )
         .persist_tokens_to_disk(local_data_file("token.json")?)
         .build()
-        .await?;
+        .await
+        .context("authentication failed")?;
 
     let hub = CalendarHub::new(
         hyper::Client::builder()
@@ -168,7 +173,8 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
     let get_response = hub.events()
         .get("primary", event_id)
         .doit()
-        .await?;
+        .await
+        .with_context(|| format!("unable to get event '{}'", event_id))?;
 
     let mut event = Event::default();
     let mut attendee = EventAttendee::default();
@@ -192,7 +198,8 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
     let rsvp_response = hub.events()
         .patch(event, "primary", event_id)
         .doit()
-        .await?;
+        .await
+        .with_context(|| format!("unable to update event '{}'", event_id))?;
 
     Ok(rsvp_response.1)
 }
@@ -209,7 +216,9 @@ fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
             ))?,
     )?;
 
-    let console_secret: oauth2::ConsoleApplicationSecret = serde_json::from_reader(f)?;
+    let console_secret: oauth2::ConsoleApplicationSecret =
+        serde_json::from_reader(f)
+            .context("unable to parse OAuth application secret file")?;
 
     console_secret.installed
         .ok_or(anyhow::anyhow!("OAuth2 application secret not found"))
@@ -229,7 +238,8 @@ fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
         Ok(d) => d,
         Err(_) => return Ok(event_id.to_owned()),
     };
-    let id_email_pair = str::from_utf8(&decoded)?;
+    let id_email_pair = str::from_utf8(&decoded)
+        .context("can't parse decoded base64 to UTF-8")?;
     let values = id_email_pair.split(" ").collect::<Vec<_>>();
     let id = values.first()
         .ok_or(
@@ -241,15 +251,18 @@ fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
 }
 
 fn eid_from_email(email: &[u8]) -> anyhow::Result<String> {
-    let email = mailparse::parse_mail(&email)?;
-    let re = Regex::new("eid=([^&]+)&")?;
+    let email = mailparse::parse_mail(&email)
+        .context("unable to parse email")?;
+    let re = Regex::new("eid=([^&]+)&")
+        .context("can't compile email eid regex")?;
 
     // Assume email is multipart/alternative.
     for part in &email.subparts {
         if part.ctype.mimetype == "multipart/alternative" {
             for part in &part.subparts {
                 if part.ctype.mimetype == "text/plain" {
-                    let body = part.get_body()?;
+                    let body = part.get_body()
+                        .context("unable to get email body")?;
                     let captures = re.captures(&body)
                         .ok_or(anyhow::anyhow!("no matches for event ID"))?;
                     let eid = captures.get(1)
@@ -276,12 +289,14 @@ fn print_event(event: &Event) -> anyhow::Result<()> {
 
     if let Some(start) = &event.start {
         if let Some(date_time) = &start.date_time {
-            let start_time = DateTime::parse_from_rfc3339(&date_time)?;
+            let start_time = DateTime::parse_from_rfc3339(&date_time)
+                .context("can't parse start time")?;
             print!("When         {}", start_time.format("%a %b %e, %Y %H:%M"));
 
             if let Some(end) = &event.end {
                 if let Some(date_time) = &end.date_time {
-                    let end_time = DateTime::parse_from_rfc3339(&date_time)?;
+                    let end_time = DateTime::parse_from_rfc3339(&date_time)
+                        .context("can't parse end time")?;
                     print!(" – {}", end_time.format("%H:%M"));
                 }
             }
