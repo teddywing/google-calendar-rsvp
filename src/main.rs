@@ -42,7 +42,13 @@ async fn main() {
     match run().await {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("error: {}: {}", e, e.root_cause());
+            eprint!("error");
+
+            for cause in e.chain() {
+                eprint!(": {}", cause);
+            }
+
+            eprintln!();
 
             process::exit(exitcode::SOFTWARE);
         },
