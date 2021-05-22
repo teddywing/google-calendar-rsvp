@@ -49,7 +49,7 @@ async fn main() {
     }
 }
 
-async fn run() -> Result<(), Box<dyn std::error::Error>> {
+async fn run() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     let mut action_opt: Option<EventResponseStatus> = None;
