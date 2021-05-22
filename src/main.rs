@@ -13,7 +13,6 @@ use std::fmt;
 use std::fs;
 use std::process;
 use std::str;
-use std::string;
 
 
 #[derive(Debug)]
@@ -30,19 +29,6 @@ impl fmt::Display for EventResponseStatus {
             EventResponseStatus::Declined => write!(f, "declined"),
             EventResponseStatus::Tentative => write!(f, "tentative"),
         }
-    }
-}
-
-
-#[derive(Debug)]
-struct Eid {
-    event_id: String,
-    email: Option<String>,
-}
-
-impl Eid {
-    fn new(event_id: String, email: Option<String>) -> Self {
-        Eid { event_id, email }
     }
 }
 
@@ -97,7 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn rsvp(eid: &Eid, response: &EventResponseStatus) {
+async fn rsvp(event_id: &str, response: &EventResponseStatus) {
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -117,26 +103,22 @@ async fn rsvp(eid: &Eid, response: &EventResponseStatus) {
         auth,
     );
 
+    let result = hub.events()
+        .get("primary", event_id)
+        .doit()
+        .await
+        .unwrap();
+
     let mut event = Event::default();
     let mut attendee = EventAttendee::default();
 
-    if let Some(email) = &eid.email {
-        attendee.email = Some(email.to_owned());
-    } else {
-        let result = hub.events()
-            .get("primary", &eid.event_id)
-            .doit()
-            .await
-            .unwrap();
+    if let Some(attendees) = result.1.attendees {
+        for a in &attendees {
+            if let Some(is_me) = a.self_ {
+                if is_me {
+                    attendee.email = a.email.clone();
 
-        if let Some(attendees) = result.1.attendees {
-            for a in &attendees {
-                if let Some(is_me) = a.self_ {
-                    if is_me {
-                        attendee.email = a.email.clone();
-
-                        break;
-                    }
+                    break;
                 }
             }
         }
@@ -147,7 +129,7 @@ async fn rsvp(eid: &Eid, response: &EventResponseStatus) {
     event.attendees = Some(vec![attendee]);
 
     let res = hub.events()
-        .patch(event, "primary", &eid.event_id)
+        .patch(event, "primary", event_id)
         .doit()
         .await
         .unwrap();
@@ -170,7 +152,7 @@ fn secret_from_file() -> oauth2::ApplicationSecret {
     }
 }
 
-fn event_id_from_base64(event_id: &str) -> Eid {
+fn event_id_from_base64(event_id: &str) -> String {
     // Base64-matching regex from Xuanyuanzhiyuan
     // (https://stackoverflow.com/users/1076906/xuanyuanzhiyuan) on Stack
     // Overflow:
@@ -180,7 +162,7 @@ fn event_id_from_base64(event_id: &str) -> Eid {
     ).unwrap();
 
     if !re.is_match(event_id) {
-        return Eid::new(event_id.to_owned(), None);
+        return event_id.to_owned();
     }
 
     let decoded = &base64::decode(event_id).unwrap();
@@ -188,7 +170,7 @@ fn event_id_from_base64(event_id: &str) -> Eid {
     let values = id_email_pair.split(" ").collect::<Vec<_>>();
     let id = values.first().unwrap().to_string();
 
-    Eid::new(id, values.last().map(string::ToString::to_string))
+    id
 }
 
 
