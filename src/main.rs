@@ -117,22 +117,26 @@ async fn rsvp(eid: &Eid, response: &EventResponseStatus) {
         auth,
     );
 
-    let result = hub.events()
-        .get("primary", &eid.event_id)
-        .doit()
-        .await
-        .unwrap();
-
     let mut event = Event::default();
     let mut attendee = EventAttendee::default();
 
-    if let Some(attendees) = result.1.attendees {
-        for a in &attendees {
-            if let Some(is_me) = a.self_ {
-                if is_me {
-                    attendee.email = a.email.clone();
+    if let Some(email) = &eid.email {
+        attendee.email = Some(email.to_owned());
+    } else {
+        let result = hub.events()
+            .get("primary", &eid.event_id)
+            .doit()
+            .await
+            .unwrap();
 
-                    break;
+        if let Some(attendees) = result.1.attendees {
+            for a in &attendees {
+                if let Some(is_me) = a.self_ {
+                    if is_me {
+                        attendee.email = a.email.clone();
+
+                        break;
+                    }
                 }
             }
         }
