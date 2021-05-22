@@ -121,7 +121,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
-    let secret = secret_from_file();
+    let secret = secret_from_file().unwrap();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
         secret,
@@ -174,19 +174,17 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
     res.1
 }
 
-fn secret_from_file() -> oauth2::ApplicationSecret {
+fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
     let f = fs::File::open(
         home::home_dir()
-            .unwrap()
+            .ok_or(anyhow::anyhow!("error getting home directory"))?
             .join(".google-service-cli/calendar3-secret.json"),
-    ).unwrap();
+    )?;
 
-    let console_secret: oauth2::ConsoleApplicationSecret = serde_json::from_reader(f).unwrap();
+    let console_secret: oauth2::ConsoleApplicationSecret = serde_json::from_reader(f)?;
 
-    match console_secret.installed {
-        Some(secret) => secret,
-        None => todo!(),
-    }
+    console_secret.installed
+        .ok_or(anyhow::anyhow!("OAuth2 application secret not found"))
 }
 
 fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
