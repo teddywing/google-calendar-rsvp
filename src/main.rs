@@ -1,4 +1,5 @@
 use base64;
+use chrono::DateTime;
 use google_calendar3::api::{Event, EventAttendee};
 use google_calendar3::CalendarHub;
 use home;
@@ -46,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut email_eid = String::new();
 
     let mut event_ids = Vec::new();
+    let mut is_verbose = false;
 
     for arg in &args[1..] {
         match arg.as_ref() {
@@ -58,6 +60,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             "--email" =>
                 should_read_email = true,
+
+            "-v" | "--verbose" =>
+                is_verbose = true,
 
             id =>
                 event_ids.push(id),
@@ -90,16 +95,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     for event_id in &event_ids {
-        rsvp(
+        let event = rsvp(
             &event_id_from_base64(event_id),
             &action,
         ).await;
+
+        if is_verbose {
+            print_event(&event);
+        }
     }
 
     Ok(())
 }
 
-async fn rsvp(event_id: &str, response: &EventResponseStatus) {
+async fn rsvp(event_id: &str, response: &EventResponseStatus) -> Event {
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -150,7 +159,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) {
         .await
         .unwrap();
 
-    dbg!(res);
+    res.1
 }
 
 fn secret_from_file() -> oauth2::ApplicationSecret {
@@ -200,6 +209,75 @@ fn eid_from_email(email: &[u8]) -> String {
     }
 
     todo!();
+}
+
+fn print_event(event: &Event) {
+    if let Some(summary) = &event.summary {
+        println!("{}", summary);
+        println!();
+    }
+
+    if let Some(description) = &event.description {
+        println!("{}", description);
+    }
+
+    if let Some(start) = &event.start {
+        if let Some(date_time) = &start.date_time {
+            let start_time = DateTime::parse_from_rfc3339(&date_time).unwrap();
+            print!("When         {}", start_time.format("%a %b %e, %Y %H:%M"));
+
+            if let Some(end) = &event.end {
+                if let Some(date_time) = &end.date_time {
+                    let end_time = DateTime::parse_from_rfc3339(&date_time).unwrap();
+                    print!(" – {}", end_time.format("%H:%M"));
+                }
+            }
+
+            print!(" {}", start_time.format("%z"));
+            println!();
+        }
+    }
+
+    if let Some(conference_data) = &event.conference_data {
+        if let Some(entry_points) = &conference_data.entry_points {
+            for entry_point in entry_points {
+                if let Some(uri) = &entry_point.uri {
+                    println!("Joining info {}", uri);
+
+                    break;
+                }
+            }
+        }
+    }
+
+    if let Some(attendees) = &event.attendees {
+        println!("Who");
+
+        for attendee in attendees {
+            let name = if let Some(display_name) = &attendee.display_name {
+                display_name
+            } else if let Some(email) = &attendee.email {
+                email
+            } else {
+                continue
+            };
+
+            if let Some(response_status) = &attendee.response_status {
+                match response_status.as_ref() {
+                    "needsAction" =>
+                        println!("             {}", name),
+                    "declined" =>
+                        println!("       No    {}", name),
+                    "tentative" =>
+                        println!("       Maybe {}", name),
+                    "accepted" =>
+                        println!("       Yes   {}", name),
+
+                    _ => (),
+                }
+            }
+        }
+    }
 }
 
 

@@ -251,6 +251,7 @@ name = "google-calendar-rsvp"
 version = "0.0.1"
 dependencies = [
  "base64 0.13.0",
+ "chrono",
  "exitcode",
  "google-calendar3",
  "home",

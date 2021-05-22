@@ -5,6 +5,7 @@ edition = "2018"
 
 [dependencies]
 base64 = "0.13.0"
+chrono = "0.4.19"
 exitcode = "1.1.2"
 google-calendar3 = "2.0.4+20210327"
 home = "0.5.3"
