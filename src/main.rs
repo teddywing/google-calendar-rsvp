@@ -49,6 +49,23 @@ async fn main() {
     }
 }
 
+fn print_usage() {
+    println!(r#"
+usage: google-calendar-rsvp [options] [-y | -n | -m] [--email] [event_ids...]
+
+Options:
+    -y, --yes          rsvp with "yes"
+    -n, --no           rsvp with "no"
+    -m, --maybe        rsvp with "maybe"
+
+        --email        read a Google Calendar invitation email from stdin
+
+    -v, --verbose      enable verbose output
+    -h, --help         print this help menu
+    -V, --version      show the program version
+"#);
+}
+
 async fn run() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
 
@@ -75,6 +92,16 @@ async fn run() -> anyhow::Result<()> {
 
             "-v" | "--verbose" =>
                 is_verbose = true,
+
+            "-h" | "--help" => {
+                print_usage();
+                process::exit(exitcode::USAGE);
+            },
+
+            "-V" | "--version" => {
+                println!("{}", env!("CARGO_PKG_VERSION"));
+                process::exit(exitcode::OK);
+            },
 
             id =>
                 event_ids.push(id),
