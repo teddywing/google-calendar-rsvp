@@ -15,7 +15,6 @@ use std::env;
 use std::fmt;
 use std::fs;
 use std::io::{self, Read};
-use std::path::{Path, PathBuf};
 use std::process;
 use std::str;
 
@@ -159,7 +158,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
         secret,
         oauth2::InstalledFlowReturnMethod::HTTPRedirect,
     )
-        .persist_tokens_to_disk(local_data_file("token.json")?)
+        .persist_tokens_to_disk(xdg_dirs.get_data_home().join("token.json"))
         .build()
         .await
         .context("authentication failed")?;
@@ -205,16 +204,19 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
 }
 
 fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("google-calendar-rsvp")
+        .context("can't get XDG base directory")?;
+
     let f = fs::File::open(
-        local_data_file("oauth-secret.json")
+        &xdg_dirs.find_data_file("oauth-secret.json")
             .context(format!(
                 "Missing OAuth2 secret file. Create an application on the Google Developer Console (https://console.developers.google.com/) and download the JSON secret file to '{}'.",
-                xdg::BaseDirectories::with_prefix("google-calendar-rsvp")?
-                    .get_data_home()
+                xdg_dirs.get_data_home()
                     .join("oauth-secret.json")
                     .display()
             ))?,
-    )?;
+    )
+        .context("unable to open OAuth secret file")?;
 
     let console_secret: oauth2::ConsoleApplicationSecret =
         serde_json::from_reader(f)
@@ -222,15 +224,6 @@ fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
 
     console_secret.installed
         .ok_or(anyhow::anyhow!("OAuth2 application secret not found"))
-}
-
-fn local_data_file<P: AsRef<Path>>(file: P) -> anyhow::Result<PathBuf> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("google-calendar-rsvp")?;
-
-    Ok(
-        xdg_dirs.find_data_file(&file)
-            .ok_or(anyhow::anyhow!("unable to get XDG data path"))?
-    )
 }
 
 fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
