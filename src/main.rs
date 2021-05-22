@@ -220,7 +220,7 @@ fn local_data_file<P: AsRef<Path>>(file: P) -> anyhow::Result<PathBuf> {
 
     Ok(
         xdg_dirs.find_data_file(&file)
-            .ok_or(anyhow::anyhow!("error getting XDG data path"))?
+            .ok_or(anyhow::anyhow!("unable to get XDG data path"))?
     )
 }
 
