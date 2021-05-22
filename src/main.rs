@@ -1,20 +1,21 @@
-use anyhow;
+use anyhow::{self, Context};
 use base64;
 use chrono::DateTime;
 use google_calendar3::api::{Event, EventAttendee};
 use google_calendar3::CalendarHub;
-use home;
 use hyper;
 use hyper_rustls;
 use mailparse;
 use regex::Regex;
 use tokio;
+use xdg;
 use yup_oauth2 as oauth2;
 
 use std::env;
 use std::fmt;
 use std::fs;
 use std::io::{self, Read};
+use std::path::{Path, PathBuf};
 use std::process;
 use std::str;
 
@@ -154,11 +155,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
         secret,
         oauth2::InstalledFlowReturnMethod::HTTPRedirect,
     )
-        .persist_tokens_to_disk(
-            home::home_dir()
-                .ok_or(anyhow::anyhow!("error getting home directory"))?
-                .join(".google-service-cli/google-calendar-rsvp")
-        )
+        .persist_tokens_to_disk(local_data_file("token.json")?)
         .build()
         .await?;
 
@@ -202,15 +199,29 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) -> anyhow::Result<
 
 fn secret_from_file() -> anyhow::Result<oauth2::ApplicationSecret> {
     let f = fs::File::open(
-        home::home_dir()
-            .ok_or(anyhow::anyhow!("error getting home directory"))?
-            .join(".google-service-cli/calendar3-secret.json"),
+        local_data_file("oauth-secret.json")
+            .context(format!(
+                "Missing OAuth2 secret file. Create an application on the Google Developer Console (https://console.developers.google.com/) and download the JSON secret file to '{}'.",
+                xdg::BaseDirectories::with_prefix("google-calendar-rsvp")?
+                    .get_data_home()
+                    .join("oauth-secret.json")
+                    .display()
+            ))?,
     )?;
 
     let console_secret: oauth2::ConsoleApplicationSecret = serde_json::from_reader(f)?;
 
     console_secret.installed
         .ok_or(anyhow::anyhow!("OAuth2 application secret not found"))
+}
+
+fn local_data_file<P: AsRef<Path>>(file: P) -> anyhow::Result<PathBuf> {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("google-calendar-rsvp")?;
+
+    Ok(
+        xdg_dirs.find_data_file(&file)
+            .ok_or(anyhow::anyhow!("error getting XDG data path"))?
+    )
 }
 
 fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
