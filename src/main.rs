@@ -4,7 +4,6 @@ use google_calendar3::CalendarHub;
 use home;
 use hyper;
 use hyper_rustls;
-use regex::Regex;
 use tokio;
 use yup_oauth2 as oauth2;
 
@@ -153,20 +152,11 @@ fn secret_from_file() -> oauth2::ApplicationSecret {
 }
 
 fn event_id_from_base64(event_id: &str) -> String {
-    // Base64-matching regex from Xuanyuanzhiyuan
-    // (https://stackoverflow.com/users/1076906/xuanyuanzhiyuan) on Stack
-    // Overflow:
-    // https://stackoverflow.com/questions/8571501/how-to-check-whether-a-string-is-base64-encoded-or-not/8571649#8571649
-    let re = Regex::new(
-        "^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$",
-    ).unwrap();
-
-    if !re.is_match(event_id) {
-        return event_id.to_owned();
-    }
-
-    let decoded = &base64::decode(event_id).unwrap();
-    let id_email_pair = str::from_utf8(decoded).unwrap();
+    let decoded = match base64::decode(event_id) {
+        Ok(d) => d,
+        Err(_) => return event_id.to_owned(),
+    };
+    let id_email_pair = str::from_utf8(&decoded).unwrap();
     let values = id_email_pair.split(" ").collect::<Vec<_>>();
     let id = values.first().unwrap().to_string();
 
