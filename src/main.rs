@@ -13,6 +13,7 @@ use std::fmt;
 use std::fs;
 use std::process;
 use std::str;
+use std::string;
 
 
 #[derive(Debug)]
@@ -29,6 +30,19 @@ impl fmt::Display for EventResponseStatus {
             EventResponseStatus::Declined => write!(f, "declined"),
             EventResponseStatus::Tentative => write!(f, "tentative"),
         }
+    }
+}
+
+
+#[derive(Debug)]
+struct Eid {
+    event_id: String,
+    email: Option<String>,
+}
+
+impl Eid {
+    fn new(event_id: String, email: Option<String>) -> Self {
+        Eid { event_id, email }
     }
 }
 
@@ -83,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn rsvp(event_id: &str, response: &EventResponseStatus) {
+async fn rsvp(eid: &Eid, response: &EventResponseStatus) {
     let secret = secret_from_file();
 
     let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -104,7 +118,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) {
     );
 
     let result = hub.events()
-        .get("primary", event_id)
+        .get("primary", &eid.event_id)
         .doit()
         .await
         .unwrap();
@@ -129,7 +143,7 @@ async fn rsvp(event_id: &str, response: &EventResponseStatus) {
     event.attendees = Some(vec![attendee]);
 
     let res = hub.events()
-        .patch(event, "primary", event_id)
+        .patch(event, "primary", &eid.event_id)
         .doit()
         .await
         .unwrap();
@@ -152,7 +166,7 @@ fn secret_from_file() -> oauth2::ApplicationSecret {
     }
 }
 
-fn event_id_from_base64(event_id: &str) -> String {
+fn event_id_from_base64(event_id: &str) -> Eid {
     // Base64-matching regex from Xuanyuanzhiyuan
     // (https://stackoverflow.com/users/1076906/xuanyuanzhiyuan) on Stack
     // Overflow:
@@ -162,7 +176,7 @@ fn event_id_from_base64(event_id: &str) -> String {
     ).unwrap();
 
     if !re.is_match(event_id) {
-        return event_id.to_owned();
+        return Eid::new(event_id.to_owned(), None);
     }
 
     let decoded = &base64::decode(event_id).unwrap();
@@ -170,7 +184,7 @@ fn event_id_from_base64(event_id: &str) -> String {
     let values = id_email_pair.split(" ").collect::<Vec<_>>();
     let id = values.first().unwrap().to_string();
 
-    id
+    Eid::new(id, values.last().map(string::ToString::to_string))
 }
 
 
