@@ -108,7 +108,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     for event_id in &event_ids {
         let event = rsvp(
-            &event_id_from_base64(event_id),
+            &event_id_from_base64(event_id)?,
             &action,
         ).await;
 
@@ -189,16 +189,20 @@ fn secret_from_file() -> oauth2::ApplicationSecret {
     }
 }
 
-fn event_id_from_base64(event_id: &str) -> String {
+fn event_id_from_base64(event_id: &str) -> anyhow::Result<String> {
     let decoded = match base64::decode(event_id) {
         Ok(d) => d,
-        Err(_) => return event_id.to_owned(),
+        Err(_) => return Ok(event_id.to_owned()),
     };
-    let id_email_pair = str::from_utf8(&decoded).unwrap();
+    let id_email_pair = str::from_utf8(&decoded)?;
     let values = id_email_pair.split(" ").collect::<Vec<_>>();
-    let id = values.first().unwrap().to_string();
+    let id = values.first()
+        .ok_or(
+            anyhow::anyhow!("unable to extract event ID from '{}'", id_email_pair),
+        )?
+        .to_string();
 
-    id
+    Ok(id)
 }
 
 fn eid_from_email(email: &[u8]) -> String {
