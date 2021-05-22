@@ -16,4 +16,4 @@ v Read eid from email on standard input (2021.05.22)
 v Verbose flag to display attendees and response statuses
 v Remove `unwrap`s, implement `todo!`s
 - Man page
-- Add documentation
+v Add documentation
