@@ -13,6 +13,6 @@ x If ID is an eid, get email from eid instead of making an Event.get request (ei
 v Read eid from email on standard input (2021.05.22)
 
 2021.05.22:
-- Verbose flag to display attendees and response statuses
+v Verbose flag to display attendees and response statuses
 - Remove `unwrap`s, implement `todo!`s
 - Man page
