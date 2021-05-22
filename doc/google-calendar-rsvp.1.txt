@@ -1,0 +1,51 @@
+google-calendar-rsvp(1)
+=======================
+
+NAME
+----
+google-calendar-rsvp - RSVP to a Google Calendar event
+
+SYNOPSIS
+--------
+'google-calendar-rsvp' [options] [-y | -n | -m] [--email] [event_ids...]
+
+DESCRIPTION
+-----------
+TODO
+
+* eid vs event ID
+* RSVP command line options
+* Email option
+* Authentication
+
+OPTIONS
+-------
+-y, --yes::
+	rsvp with "yes"
+
+-n, --no::
+	rsvp with "no"
+
+-m, --maybe::
+	rsvp with "maybe"
+
+--email::
+	Read a Google Calendar invitation email from standard input and extract
+	the event ID from the email instead of having to provide it as a command
+	line argument.
+
+-v, --verbose::
+	Enable verbose output.
+
+-h, --help::
+	Print usage help.
+
+-V, --version::
+	Print the program version.
+
+FILES
+-----
+TODO
+
+$HOME/.local/share/google-calendar-rsvp/token.json
+$HOME/.local/share/google-calendar-rsvp/oauth-secret.json
