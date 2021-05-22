@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let mut action_opt: Option<EventResponseStatus> = None;
-    let mut email = false;
+    let mut should_read_email = false;
     let mut email_eid = String::new();
     let mut event_ids = Vec::new();
 
@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 action_opt = Some(EventResponseStatus::Tentative),
 
             "--email" =>
-                email = true,
+                should_read_email = true,
 
             id =>
                 event_ids.push(id),
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     };
 
-    if email {
+    if should_read_email {
         let mut stdin = io::stdin();
         let mut email_input: Vec<u8> = Vec::new();
         stdin.read_to_end(&mut email_input)?;
