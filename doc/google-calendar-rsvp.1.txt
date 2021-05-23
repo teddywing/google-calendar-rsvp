@@ -11,12 +11,43 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-TODO
+RSVP to a Google Calendar event. Events are specified by their ID or by their
+EID.
 
-* eid vs event ID
-* RSVP command line options
-* Email option
-* Authentication
+An event ID looks like:
+
+	1g4j1h67ndq7kddrb2bptp2cua
+
+EIDs are more common, found in invitation emails and event URLs:
+
+	MWc0ajFoNjduZHE3a2RkcmIyYnB0cDJjdWEgcm9yeS5tZXJjdXJ5QGV4YW1wbGUuY28K
+
+An EID is a base64-encoded pair of values consisting of the event ID and most
+or all of the organiser's email address.
+
+Both event IDs and EIDs can be passed as command line arguments to RSVP to
+those events. EIDs can also be read from an email given on standard input if
+the '--email' flag is present. This allows an invitation email to be sent
+directly to the program to avoid having to extract the EID separately.
+
+To RSVP to an event, use the '--yes', '--no', or '--maybe' flags. The flag
+applies to all events passed to the program. If more than one RSVP flag is
+present, the rightmost one is used.
+
+AUTHENTICATION
+--------------
+Authentication is required to make requests to the Google Calendar API. Before
+the program can be used, users must create a Google project, and an OAuth 2
+client ID. The Google project must enable the Google Calendar API.
+
+The OAuth client ID should be downloaded as a JSON file to:
+
+	$HOME/.local/share/google-calendar-rsvp/oauth-secret.json
+
+On the first run of the program, you will be asked to visit a Google URL to
+create a token and authorise scopes for the Google Calendar API. At this
+point, the program will have the required authentication and authorisation
+prerequisites to operate.
 
 OPTIONS
 -------

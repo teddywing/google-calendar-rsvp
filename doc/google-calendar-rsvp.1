@@ -34,66 +34,69 @@ google-calendar-rsvp \- RSVP to a Google Calendar event
 \fIgoogle\-calendar\-rsvp\fR [options] [\-y | \-n | \-m] [\-\-email] [event_ids\&...]
 .SH "DESCRIPTION"
 .sp
-TODO
+RSVP to a Google Calendar event\&. Events are specified by their ID or by their EID\&.
 .sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-eid vs event ID
-.RE
+An event ID looks like:
 .sp
+.if n \{\
 .RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
 .\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-RSVP command line options
+.nf
+1g4j1h67ndq7kddrb2bptp2cua
+.fi
+.if n \{\
 .RE
+.\}
 .sp
-.RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
-.\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-Email option
-.RE
+EIDs are more common, found in invitation emails and event URLs:
 .sp
+.if n \{\
 .RS 4
-.ie n \{\
-\h'-04'\(bu\h'+03'\c
 .\}
-.el \{\
-.sp -1
-.IP \(bu 2.3
-.\}
-Authentication
+.nf
+MWc0ajFoNjduZHE3a2RkcmIyYnB0cDJjdWEgcm9yeS5tZXJjdXJ5QGV4YW1wbGUuY28K
+.fi
+.if n \{\
 .RE
+.\}
+.sp
+An EID is a base64\-encoded pair of values consisting of the event ID and most or all of the organiser\(cqs email address\&.
+.sp
+Both event IDs and EIDs can be passed as command line arguments to RSVP to those events\&. EIDs can also be read from an email given on standard input if the \fI\-\-email\fR flag is present\&. This allows an invitation email to be sent directly to the program to avoid having to extract the EID separately\&.
+.sp
+To RSVP to an event, use the \fI\-\-yes\fR, \fI\-\-no\fR, or \fI\-\-maybe\fR flags\&. The flag applies to all events passed to the program\&. If more than one RSVP flag is present, the rightmost one is used\&.
+.SH "AUTHENTICATION"
+.sp
+Authentication is required to make requests to the Google Calendar API\&. Before the program can be used, users must create a Google project, and an OAuth 2 client ID\&. The Google project must enable the Google Calendar API\&.
+.sp
+The OAuth client ID should be downloaded as a JSON file to:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$HOME/\&.local/share/google\-calendar\-rsvp/oauth\-secret\&.json
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+On the first run of the program, you will be asked to visit a Google URL to create a token and authorise scopes for the Google Calendar API\&. At this point, the program will have the required authentication and authorisation prerequisites to operate\&.
 .SH "OPTIONS"
 .PP
 \-y, \-\-yes
 .RS 4
-rsvp with "yes"
+Accept the event invitation\&.
 .RE
 .PP
 \-n, \-\-no
 .RS 4
-rsvp with "no"
+Decline the event invitation\&.
 .RE
 .PP
 \-m, \-\-maybe
 .RS 4
-rsvp with "maybe"
+Tentatively accept the event invitation\&.
 .RE
 .PP
 \-\-email
