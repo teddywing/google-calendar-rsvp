@@ -21,13 +21,13 @@ TODO
 OPTIONS
 -------
 -y, --yes::
-	rsvp with "yes"
+	Accept the event invitation.
 
 -n, --no::
-	rsvp with "no"
+	Decline the event invitation.
 
 -m, --maybe::
-	rsvp with "maybe"
+	Tentatively accept the event invitation.
 
 --email::
 	Read a Google Calendar invitation email from standard input and extract
