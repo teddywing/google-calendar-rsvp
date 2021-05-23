@@ -42,7 +42,7 @@ client ID. The Google project must enable the Google Calendar API.
 
 The OAuth client ID should be downloaded as a JSON file to:
 
-	$HOME/.local/share/google-calendar-rsvp/oauth-secret.json
+	$XDG_DATA_HOME/google-calendar-rsvp/oauth-secret.json
 
 On the first run of the program, you will be asked to visit a Google URL to
 create a token and authorise scopes for the Google Calendar API. At this
@@ -76,7 +76,11 @@ OPTIONS
 
 FILES
 -----
-TODO
+$XDG_DATA_HOME/google-calendar-rsvp/oauth-secret.json::
+	Google OAuth 2 client secret file. This file can be downloded from the
+	Google Developer console. You must create this file manually before being
+	able to use the program.
 
-$HOME/.local/share/google-calendar-rsvp/token.json
-$HOME/.local/share/google-calendar-rsvp/oauth-secret.json
+$XDG_DATA_HOME/google-calendar-rsvp/token.json::
+	The Google authentication refresh token, created automatically by the
+	program.

@@ -75,7 +75,7 @@ The OAuth client ID should be downloaded as a JSON file to:
 .RS 4
 .\}
 .nf
-$HOME/\&.local/share/google\-calendar\-rsvp/oauth\-secret\&.json
+$XDG_DATA_HOME/google\-calendar\-rsvp/oauth\-secret\&.json
 .fi
 .if n \{\
 .RE
@@ -119,7 +119,13 @@ Print usage help\&.
 Print the program version\&.
 .RE
 .SH "FILES"
-.sp
-TODO
-.sp
-$HOME/\&.local/share/google\-calendar\-rsvp/token\&.json $HOME/\&.local/share/google\-calendar\-rsvp/oauth\-secret\&.json
+.PP
+$XDG_DATA_HOME/google\-calendar\-rsvp/oauth\-secret\&.json
+.RS 4
+Google OAuth 2 client secret file\&. This file can be downloded from the Google Developer console\&. You must create this file manually before being able to use the program\&.
+.RE
+.PP
+$XDG_DATA_HOME/google\-calendar\-rsvp/token\&.json
+.RS 4
+The Google authentication refresh token, created automatically by the program\&.
+.RE
