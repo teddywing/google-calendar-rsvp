@@ -79,8 +79,7 @@ async fn main() {
 }
 
 fn print_usage() {
-    print!(r#"
-usage: google-calendar-rsvp [options] [-y | -n | -m] [--email] [event_ids...]
+    print!(r#"usage: google-calendar-rsvp [options] [-y | -n | -m] [--email] [event_ids...]
 
 Options:
     -y, --yes          rsvp with "yes"
