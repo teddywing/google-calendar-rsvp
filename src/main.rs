@@ -99,9 +99,7 @@ async fn run() -> anyhow::Result<()> {
 
     let mut action_opt: Option<EventResponseStatus> = None;
     let mut should_read_email = false;
-
-    #[allow(unused_assignments)]
-    let mut email_eid = String::new();
+    let email_eid;
 
     let mut event_ids = Vec::new();
     let mut is_verbose = false;
